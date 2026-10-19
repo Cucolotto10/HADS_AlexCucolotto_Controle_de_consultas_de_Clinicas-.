@@ -37,7 +37,29 @@ async function listarConsultas(){ const {data}=await api.get('/consultas'); cons
 async function salvarPaciente(){ await executar(async()=>{ await api.post('/pacientes',paciente); Object.keys(paciente).forEach(k=>paciente[k]=''); mensagem.value='Paciente cadastrado.'; await listarPacientes(); }); }
 async function salvarMedico(){ await executar(async()=>{ await api.post('/medicos',medico); Object.keys(medico).forEach(k=>medico[k]=''); mensagem.value='Médico cadastrado.'; await listarMedicos(); }); }
 async function salvarConvenio(){ await executar(async()=>{ await api.post('/convenios',convenio); Object.keys(convenio).forEach(k=>convenio[k]=''); mensagem.value='Convênio cadastrado.'; await listarConvenios(); }); }
-async function verificarHorarios(){ await executar(async()=>{ if(!consulta.medico_id||!consulta.data_consulta) throw new Error('Selecione o médico e a data.'); const {data}=await api.get('/consultas/disponibilidade',{params:{medico_id:consulta.medico_id,data:consulta.data_consulta}}); slots.value=data; }); }
+
+async function verificarHorarios() {
+  await executar(async () => {
+    if (!consulta.medico_id || !consulta.data_consulta) {
+      throw new Error('Selecione o médico e a data.');
+    }
+
+    const { data } = await api.get('/consultas/disponibilidade', {
+      params: {
+        medico_id: consulta.medico_id,
+        data: consulta.data_consulta
+      }
+    });
+
+    console.log('Resposta recebida:', data);
+    console.log('É uma lista?', Array.isArray(data));
+
+    slots.value = data;
+
+    mensagem.value = `Foram encontrados ${slots.value.length} horários disponíveis.`;
+  });
+}
+
 async function salvarConsulta(){ await executar(async()=>{ await api.post('/consultas',consulta); mensagem.value='Consulta agendada.'; Object.assign(consulta,{paciente_id:'',medico_id:'',convenio_id:'',especialidade:'',data_consulta:'',horario:'',tipo_atendimento:'Particular',observacoes:''}); slots.value=[]; await listarConsultas(); }); }
 async function acaoConsulta(c,acao){ await executar(async()=>{ if(acao==='cancelar'){ if(!confirm('Deseja realmente cancelar esta consulta?')) return; await api.patch(`/consultas/${c.id}/cancelar`); } else if(acao==='confirmar'){ await api.patch(`/consultas/${c.id}/confirmar`); } else if(acao==='reagendar'){ const data_consulta=prompt('Nova data (AAAA-MM-DD):',String(c.data_consulta).slice(0,10)); if(!data_consulta)return; const horario=prompt('Novo horário (HH:MM):',String(c.horario).slice(0,5)); if(!horario)return; await api.patch(`/consultas/${c.id}/reagendar`,{data_consulta,horario}); } mensagem.value='Consulta atualizada.'; await listarConsultas(); }); }
 async function salvarAtendimento(){ await executar(async()=>{ await api.post('/atendimentos',atendimento); Object.keys(atendimento).forEach(k=>atendimento[k]=''); mensagem.value='Atendimento registrado.'; await listarConsultas(); }); }
