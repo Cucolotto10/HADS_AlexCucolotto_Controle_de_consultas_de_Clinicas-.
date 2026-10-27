@@ -35,7 +35,33 @@ async function listarMedicos(){ const {data}=await api.get('/medicos'); medicos.
 async function listarConvenios(){ const {data}=await api.get('/convenios'); convenios.value=data; }
 async function listarConsultas(){ const {data}=await api.get('/consultas'); consultas.value=data; }
 async function salvarPaciente(){ await executar(async()=>{ await api.post('/pacientes',paciente); Object.keys(paciente).forEach(k=>paciente[k]=''); mensagem.value='Paciente cadastrado.'; await listarPacientes(); }); }
-async function salvarMedico(){ await executar(async()=>{ await api.post('/medicos',medico); Object.keys(medico).forEach(k=>medico[k]=''); mensagem.value='Médico cadastrado.'; await listarMedicos(); }); }
+async function salvarMedico() {
+  await executar(async () => {
+    await api.post('/medicos', medico);
+    Object.keys(medico).forEach((chave) => {
+      medico[chave] = '';
+    });
+    mensagem.value = 'Médico cadastrado.';
+    await listarMedicos();
+  });
+}
+async function excluirMedico(m) {
+  if (!podeAdmin.value) {
+    erro.value = 'Somente o administrador pode excluir médicos.';
+    return;
+  }
+
+  if (!confirm(`Deseja realmente excluir o médico ${m.nome}?`)) {
+    return;
+  }
+
+  await executar(async () => {
+    await api.delete(`/medicos/${m.id}`);
+    mensagem.value = 'Médico excluído com sucesso.';
+    await listarMedicos();
+    await listarConsultas();
+  });
+}
 async function salvarConvenio(){ await executar(async()=>{ await api.post('/convenios',convenio); Object.keys(convenio).forEach(k=>convenio[k]=''); mensagem.value='Convênio cadastrado.'; await listarConvenios(); }); }
 
 async function verificarHorarios() {
@@ -113,7 +139,37 @@ onMounted(()=>{ if(token.value) carregarTudo().catch(e=>avisar(e)); });
             <label>Telefone<input v-model="medico.telefone"></label><label>E-mail<input v-model="medico.email" type="email"></label>
             <button :disabled="!podeAdmin||carregando">{{ podeAdmin?'Cadastrar médico':'Somente administrador cadastra médicos' }}</button>
           </form>
-          <h3>Médicos ativos</h3><div class="tabela"><table><thead><tr><th>Nome</th><th>Especialidade</th><th>Registro</th></tr></thead><tbody><tr v-for="m in medicos" :key="m.id"><td>{{m.nome}}</td><td>{{m.especialidade}}</td><td>{{m.registro_profissional}}</td></tr></tbody></table></div>
+          <h3>Médicos ativos</h3>
+          <div class="tabela">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Especialidade</th>
+                  <th>Registro</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="m in medicos" :key="m.id">
+                  <td>{{ m.nome }}</td>
+                  <td>{{ m.especialidade }}</td>
+                  <td>{{ m.registro_profissional }}</td>
+                  <td>
+                    <button
+                      v-if="podeAdmin"
+                      type="button"
+                      class="pequeno perigo"
+                      :disabled="carregando"
+                      @click="excluirMedico(m)"
+                    >
+                      Excluir
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
         <section v-if="tela==='convenios'" class="painel">
           <h2>Convênios</h2><form class="form-grid" @submit.prevent="salvarConvenio">

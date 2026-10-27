@@ -131,10 +131,24 @@ app.post('/api/medicos', autenticar, permitir('Administrador'), asyncRoute(async
     [clean(req.body.nome), clean(req.body.cpf), clean(req.body.registro_profissional), clean(req.body.especialidade), clean(req.body.telefone) || null, clean(req.body.email) || null]);
   res.status(201).json({ id: r.insertId, mensagem: 'Médico cadastrado.' });
 }));
-app.patch('/api/medicos/:id/desativar', autenticar, permitir('Administrador'), asyncRoute(async (req, res) => {
-  await pool.query('UPDATE medicos SET ativo=FALSE WHERE id=?', [req.params.id]);
-  res.json({ mensagem: 'Médico desativado; consultas anteriores foram preservadas.' });
+
+app.delete('/api/medicos/:id', autenticar, permitir('Administrador'), asyncRoute(async (req, res) => {
+  const [resultado] = await pool.query(
+    'UPDATE medicos SET ativo = FALSE WHERE id = ? AND ativo = TRUE',
+    [req.params.id]
+  );
+
+  if (resultado.affectedRows === 0) {
+    return res.status(404).json({
+      erro: 'Médico não encontrado ou já está inativo.'
+    });
+  }
+
+  res.json({
+    mensagem: 'Médico excluído da lista de ativos. O histórico foi preservado.'
+  });
 }));
+
 
 // Convênios e vínculo paciente-convênio
 app.get('/api/convenios', autenticar, asyncRoute(async (req, res) => {
