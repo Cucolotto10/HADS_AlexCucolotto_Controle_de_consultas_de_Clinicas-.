@@ -201,11 +201,249 @@ onMounted(()=>{ if(token.value) carregarTudo().catch(e=>avisar(e)); });
             <button :disabled="!['Administrador','Profissional'].includes(usuario?.perfil)||carregando">Salvar atendimento</button>
           </form>
         </section>
-        <section v-if="tela==='historico'" class="painel"><div class="linha"><h2>Histórico de consultas</h2><button class="secundario" @click="tela='pacientes'">Voltar</button></div>
-          <div class="tabela"><table><thead><tr><th>Data</th><th>Horário</th><th>Médico</th><th>Especialidade</th><th>Situação</th><th>Motivo/Atendimento</th></tr></thead><tbody><tr v-for="h in historico" :key="h.id"><td>{{String(h.data_consulta).slice(0,10)}}</td><td>{{String(h.horario).slice(0,5)}}</td><td>{{h.medico_nome}}</td><td>{{h.especialidade}}</td><td>{{h.situacao}}</td><td>{{h.motivo||'—'}} {{h.procedimentos||''}}</td></tr></tbody></table></div>
+        <section v-if="tela==='historico'" class="painel historico-painel">
+          <div class="historico-cabecalho">
+            <div>
+              <h2>Histórico de consultas</h2>
+              <p class="historico-subtitulo">Consulte os atendimentos anteriores do paciente.</p>
+            </div>
+            <button class="secundario" type="button" @click="tela='pacientes'">Voltar</button>
+          </div>
+
+          <div v-if="historico.length" class="historico-lista">
+            <article v-for="h in historico" :key="h.id" class="consulta-card">
+              <div class="consulta-card-topo">
+                <div>
+                  <span class="consulta-data">{{ String(h.data_consulta).slice(0,10) }}</span>
+                  <span class="consulta-horario">{{ String(h.horario).slice(0,5) }}</span>
+                </div>
+                <span class="consulta-status"
+                  :class="{
+                    'status-realizada': h.situacao === 'Realizada',
+                    'status-cancelada': h.situacao === 'Cancelada',
+                    'status-pendente': ['Agendada','Confirmada'].includes(h.situacao)
+                  }">{{ h.situacao }}</span>
+              </div>
+
+              <div class="consulta-profissional">
+                <div class="consulta-icone">+</div>
+                <div>
+                  <strong>{{ h.medico_nome || 'Médico não informado' }}</strong>
+                  <span>{{ h.especialidade || 'Especialidade não informada' }}</span>
+                </div>
+              </div>
+
+              <div class="consulta-detalhes">
+                <div class="detalhe-bloco">
+                  <span class="detalhe-titulo">Motivo da consulta</span>
+                  <p>{{ h.motivo || 'Não informado' }}</p>
+                </div>
+                <div class="detalhe-bloco">
+                  <span class="detalhe-titulo">Procedimentos / atendimento</span>
+                  <p>{{ h.procedimentos || 'Nenhum procedimento registrado' }}</p>
+                </div>
+                <div v-if="h.observacoes" class="detalhe-bloco">
+                  <span class="detalhe-titulo">Observações</span>
+                  <p>{{ h.observacoes }}</p>
+                </div>
+                <div v-if="h.orientacoes" class="detalhe-bloco">
+                  <span class="detalhe-titulo">Orientações</span>
+                  <p>{{ h.orientacoes }}</p>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div v-else class="historico-vazio">
+            <strong>Nenhuma consulta encontrada</strong>
+            <p>Este paciente ainda não possui consultas registradas no histórico.</p>
+          </div>
         </section>
       </template>
     </main>
     <footer>Sistema de Controle de Consultas para Clínicas · Projeto acadêmico</footer>
   </div>
 </template>
+
+
+<style scoped>
+.historico-painel {
+  overflow: hidden;
+}
+
+.historico-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.historico-cabecalho h2 {
+  margin: 0 0 6px;
+}
+
+.historico-subtitulo {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.historico-lista {
+  display: grid;
+  gap: 16px;
+}
+
+.consulta-card {
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+}
+
+.consulta-card-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.consulta-data {
+  color: #172554;
+  font-weight: 700;
+}
+
+.consulta-horario {
+  margin-left: 12px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.consulta-status {
+  display: inline-block;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status-realizada {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-cancelada {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-pendente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.consulta-profissional {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 0;
+}
+
+.consulta-icone {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 25px;
+  font-weight: 500;
+}
+
+.consulta-profissional strong,
+.consulta-profissional span {
+  display: block;
+}
+
+.consulta-profissional strong {
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.consulta-profissional span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.consulta-detalhes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detalhe-bloco {
+  min-width: 0;
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.detalhe-titulo {
+  display: block;
+  margin-bottom: 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.detalhe-bloco p {
+  margin: 0;
+  color: #1e293b;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.historico-vazio {
+  padding: 35px 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  text-align: center;
+  color: #64748b;
+}
+
+.historico-vazio strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #334155;
+}
+
+.historico-vazio p {
+  margin: 0;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .historico-cabecalho {
+    align-items: flex-start;
+  }
+
+  .consulta-detalhes {
+    grid-template-columns: 1fr;
+  }
+
+  .consulta-card {
+    padding: 15px;
+  }
+}
+</style>
